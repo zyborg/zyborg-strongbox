@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <RootNamespace>Zyborg.Vault</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Audit\Audit.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="jose-jwt" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.3.0" />
+    <PackageReference Include="Zyborg.Collections.RadixTree" Version="1.0.1.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Zyborg.Util\Zyborg.Util.csproj" />
+  </ItemGroup>
+
+</Project>
