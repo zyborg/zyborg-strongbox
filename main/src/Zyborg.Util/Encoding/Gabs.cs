@@ -158,7 +158,7 @@ namespace Zyborg.Util.Encoding
 						//~ if res != nil {
 						//~ 	tmpArray = append(tmpArray, res)
 						//~ }
-						var tmpGabs = new Container { Object = val, };
+						var tmpGabs = new Container(val);
 						var res = tmpGabs.Search(hierarchy.Skip(target).ToArray()).Object;
 						if (res != null)
 							tmpArray.Add(res);
@@ -281,7 +281,7 @@ namespace Zyborg.Util.Encoding
 				//~ 	children[name] = &Container{obj}
 				//~ }
 				//~ return children, nil
-				var children = new Dictionary<string, Container>();
+				var children = new SortedDictionary<string, Container>();
 				foreach (var kv in nmap)
 					children[kv.Key] = new Container(kv.Value);
 				return children;
@@ -313,7 +313,7 @@ namespace Zyborg.Util.Encoding
 			//~ }
 			//~ object = g.object
 			if (this.Object == null)
-				this.Object = new Dictionary<string, object>();
+				this.Object = new SortedDictionary<string, object>();
 			var obj = this.Object;
 
 			//~ for target := 0; target < len(path); target++ {
@@ -335,7 +335,7 @@ namespace Zyborg.Util.Encoding
 					if (target == path.Length - 1)
 						nmap[path[target]] = value;
 					else if (!nmap.ContainsKey(path[target]))
-						nmap[path[target]] = new Dictionary<string, object>();
+						nmap[path[target]] = new SortedDictionary<string, object>();
 
 					obj = nmap[path[target]];
 				}
@@ -343,7 +343,7 @@ namespace Zyborg.Util.Encoding
 					throw new ErrPathCollision();
 			}
 			//~ return &Container{object}, nil
-			return new Container();
+			return new Container(obj);
 		}
 
 		// SetP - Does the same as Set, but using a dot notation JSON path.
@@ -383,7 +383,7 @@ namespace Zyborg.Util.Encoding
 		public Container ObjectJ(params string[] path)
 		{
 			//~ return g.Set(map[string]interface{}{}, path...)
-			return Set(new Dictionary<string, object>(), path);
+			return Set(new SortedDictionary<string, object>(), path);
 		}
 
 		// ObjectP - Does the same as Object, but using a dot notation JSON path.
@@ -400,7 +400,7 @@ namespace Zyborg.Util.Encoding
 		public Container ObjectI(int index)
 		{
 			//~ return g.SetIndex(map[string]interface{}{}, index)
-			return SetIndex(new Dictionary<string, object>(), index);
+			return SetIndex(new SortedDictionary<string, object>(), index);
 		}
 
 		// Array - Create a new JSON array at a path. Returns an error if the path contains a collision with
@@ -436,7 +436,7 @@ namespace Zyborg.Util.Encoding
 		{
 			//~ a := make([]interface{}, size)
 			//~ return g.Set(a, path...)
-			return Set(new List<object>(size), path);
+			return Set(new List<object>(new object[size]), path);
 		}
 
 		// ArrayOfSizeP - Does the same as ArrayOfSize, but using a dot notation JSON path.
@@ -454,7 +454,7 @@ namespace Zyborg.Util.Encoding
 		{
 			//~ a := make([]interface{}, size)
 			//~ return g.SetIndex(a, index)
-			return SetIndex(new List<object>(size), index);
+			return SetIndex(new List<object>(new object[size]), index);
 		}
 
 		// Delete - Delete an element at a JSON path, an error is returned if the element does not exist.
@@ -569,7 +569,9 @@ namespace Zyborg.Util.Encoding
 			//~ 	return ErrOutOfBounds
 			//~ }
 			if (index < array.Count)
-				array = array.Take(index).ToArray().Append(array.ElementAt(index + 1));
+				array.RemoveAt(index);
+			else
+				throw new ErrOutOfBounds();
 
 			//~ _, err := g.Set(array, path...)
 			//~ return err
@@ -698,7 +700,7 @@ namespace Zyborg.Util.Encoding
 		public static Container New()
 		{
 			//~ return &Container{map[string]interface{}{}}
-			return new Container(new Dictionary<string, object>());
+			return new Container(new SortedDictionary<string, object>());
 		}
 
 		// Consume - Gobble up an already converted JSON object, or a fresh map[string]interface{} object.
@@ -815,7 +817,7 @@ namespace Zyborg.Util.Encoding
 				//		prop => prop.Name,
 				//		prop => ToObject(prop.Value));
 
-				var d = new OrderedDictionary<string, object>();
+				var d = new SortedDictionary<string, object>();
 				foreach (var p in en)
 					d.Add(p.Name, ToObject(p.Value));
 				return d;

@@ -2,6 +2,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Zyborg.Util.Encoding
 {
@@ -921,6 +922,775 @@ namespace Zyborg.Util.Encoding
 			//~ }
 			json1.Path("array").Index(3).Index(0).Set(200, "test");
 			Assert.AreEqual(200, json1.Path("array").Index(3).Index(0).S("test").Object);
+		}
+
+		[TestMethod]
+		//~ func TestArrays(t *testing.T) {
+		public void TestArrays()
+		{
+			//~ json1, _ := ParseJSON([]byte(`{
+			//~ 	"languages":{
+			//~ 		"english":{
+			//~ 			"places":0
+			//~ 		},
+			//~ 		"french": {
+			//~ 			"places": [
+			//~ 				"france",
+			//~ 				"belgium"
+			//~ 			]
+			//~ 		}
+			//~ 	}
+			//~ }`))
+			//~ 
+			//~ json2, _ := ParseJSON([]byte(`{
+			//~ 	"places":[
+			//~ 		"great_britain",
+			//~ 		"united_states_of_america",
+			//~ 		"the_world"
+			//~ 	]
+			//~ }`))
+			var json1 = Container.ParseJSON(@"{
+				""languages"":{
+					""english"":{
+						""places"":0
+					},
+					""french"": {
+						""places"": [
+							""france"",
+							""belgium""
+						]
+					}
+				}
+			}".ToUtf8Bytes());
+
+			var json2 = Container.ParseJSON(@"{
+				""places"":[
+					""great_britain"",
+					""united_states_of_america"",
+					""the_world""
+				]
+			}".ToUtf8Bytes());
+
+
+			//~ if englishPlaces := json2.Search("places").Data(); englishPlaces != nil {
+			//~ 	json1.Path("languages.english").Set(englishPlaces, "places")
+			//~ } else {
+			//~ 	t.Errorf("Didn't find places in json2")
+			//~ }
+			var englishPlaces = json2.Search("places").Object;
+			Assert.IsNotNull(englishPlaces);
+			json1.Path("languages.english").Set(englishPlaces, "places");
+
+			//~ if englishPlaces := json1.Search("languages", "english", "places").Data(); englishPlaces != nil {
+			//~
+			//~	englishArray, ok := englishPlaces.([]interface{})
+			//~	if !ok {
+			//~		t.Errorf("places in json1 (%v) was not an array", englishPlaces)
+			//~	}
+			//~
+			//~	if len(englishArray) != 3 {
+			//~		t.Errorf("wrong length of array: %v", len(englishArray))
+			//~	}
+			//~
+			//~} else {
+			//~	t.Errorf("Didn't find places in json1")
+			//~}
+			englishPlaces = json1.Search("languages", "english", "places").Object;
+			Assert.IsNotNull(englishPlaces);
+			var englishArray = (IList<object>)englishPlaces;
+			Assert.AreEqual(3, englishArray.Count);
+
+			//~ for i := 0; i < 3; i++ {
+			//~ 	if err := json2.ArrayRemove(0, "places"); err != nil {
+			//~ 		t.Errorf("Error removing element: %v", err)
+			//~ 	}
+			//~ }
+			for (int i = 0; i < 3; i++)
+				json2.ArrayRemove(0, "places");
+
+			//~ json2.ArrayAppend(map[string]interface{}{}, "places")
+			//~ json2.ArrayAppend(map[string]interface{}{}, "places")
+			//~ json2.ArrayAppend(map[string]interface{}{}, "places")
+			json2.ArrayAppend(new Dictionary<string, object>(), "places");
+			json2.ArrayAppend(new Dictionary<string, object>(), "places");
+			json2.ArrayAppend(new Dictionary<string, object>(), "places");
+
+			// Using float64 for this test even though it's completely inappropriate because
+			// later on the API might do something clever with types, in which case all numbers
+			// will become float64.
+			//~ for i := 0; i < 3; i++ {
+			//~ 	obj, _ := json2.ArrayElement(i, "places")
+			//~ 	obj2, _ := obj.Object(fmt.Sprintf("object%v", i))
+			//~ 	obj2.Set(float64(i), "index")
+			//~ }
+			for (int i = 0; i < 3; i++)
+			{
+				var obj = json2.ArrayElement(i, "places");
+				var obj2 = obj.ObjectJ($"object{i}");
+				obj2.Set(Convert.ToDouble(i), "index");
+			}
+
+			//! children, _ := json2.S("places").Children()
+			//! for i, obj := range children {
+			//! 	if id, ok := obj.S(fmt.Sprintf("object%v", i)).S("index").Data().(float64); ok {
+			//! 		if id != float64(i) {
+			//! 			t.Errorf("Wrong index somehow, expected %v, received %v", i, id)
+			//! 		}
+			//! 	} else {
+			//! 		t.Errorf("Failed to find element %v from %v", i, obj)
+			//! 	}
+			//! }
+			var children = json2.S("places").Children();
+			for (int i = 0; i < children.Length; i++)
+			{
+				var obj = children[i];
+				var id = Convert.ToDouble(obj.S($"object{i}").S("index").Object);
+				Assert.IsNotNull(i);
+				Assert.AreEqual(Convert.ToDouble(i), id);
+			}
+
+			//~ if err := json2.ArrayRemove(1, "places"); err != nil {
+			//~ 	t.Errorf("Error removing element: %v", err)
+			//~ }
+			json2.ArrayRemove(1, "places");
+
+			//~ expected := `{"places":[{"object0":{"index":0}},{"object2":{"index":2}}]}`
+			//~ received := json2.String()
+			var expected = @"{""places"":[{""object0"":{""index"":0.0}},{""object2"":{""index"":2.0}}]}";
+			var received = json2.ToString();
+
+			//~ if expected != received {
+			//~ 	t.Errorf("Wrong output, expected: %v, received: %v", expected, received)
+			//~ }
+			Assert.AreEqual(expected, received);
+		}
+
+		[TestMethod]
+		//~ func TestArraysTwo(t *testing.T) {
+		public void TestArraysTwo()
+		{
+			//~ json1 := New()
+			var json1 = Container.New();
+
+			//~ test1, err := json1.ArrayOfSize(4, "test1")
+			//~ if err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			var test1 = json1.ArrayOfSize(4, "test1");
+
+			//~ if _, err = test1.ArrayOfSizeI(2, 0); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = test1.ArrayOfSizeI(2, 1); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = test1.ArrayOfSizeI(2, 2); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = test1.ArrayOfSizeI(2, 3); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			test1.ArrayOfSizeI(2, 0);
+			test1.ArrayOfSizeI(2, 1);
+			test1.ArrayOfSizeI(2, 2);
+			test1.ArrayOfSizeI(2, 3);
+
+			//~ if _, err = test1.ArrayOfSizeI(2, 4); err != ErrOutOfBounds {
+			//~ 	t.Errorf("Index should have been out of bounds")
+			//~ }
+			Assert.ThrowsException<Container.ErrOutOfBounds>(() => test1.ArrayOfSizeI(2, 4));
+
+			//~ if _, err = json1.S("test1").Index(0).SetIndex(10, 0); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = json1.S("test1").Index(0).SetIndex(11, 1); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ 
+			//~ if _, err = json1.S("test1").Index(1).SetIndex(12, 0); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = json1.S("test1").Index(1).SetIndex(13, 1); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			json1.S("test1").Index(0).SetIndex(10, 0);
+			json1.S("test1").Index(0).SetIndex(11, 1);
+			json1.S("test1").Index(1).SetIndex(12, 0);
+			json1.S("test1").Index(1).SetIndex(13, 1);
+
+			//~ if _, err = json1.S("test1").Index(2).SetIndex(14, 0); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = json1.S("test1").Index(2).SetIndex(15, 1); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			json1.S("test1").Index(2).SetIndex(14, 0);
+			json1.S("test1").Index(2).SetIndex(15, 1);
+
+			//~ if _, err = json1.S("test1").Index(3).SetIndex(16, 0); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			//~ if _, err = json1.S("test1").Index(3).SetIndex(17, 1); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			json1.S("test1").Index(3).SetIndex(16, 0);
+			json1.S("test1").Index(3).SetIndex(17, 1);
+
+			//~ if val := json1.S("test1").Index(0).Index(0).Data().(int); val != 10 {
+			//~ 	t.Errorf("create array: %v != %v", val, 10)
+			//~ }
+			//~ if val := json1.S("test1").Index(0).Index(1).Data().(int); val != 11 {
+			//~ 	t.Errorf("create array: %v != %v", val, 11)
+			//~ }
+			Assert.AreEqual(10, json1.S("test1").Index(0).Index(0).Object);
+			Assert.AreEqual(11, json1.S("test1").Index(0).Index(1).Object);
+
+			//~ if val := json1.S("test1").Index(1).Index(0).Data().(int); val != 12 {
+			//~ 	t.Errorf("create array: %v != %v", val, 12)
+			//~ }
+			//~ if val := json1.S("test1").Index(1).Index(1).Data().(int); val != 13 {
+			//~ 	t.Errorf("create array: %v != %v", val, 13)
+			//~ }
+			Assert.AreEqual(12, json1.S("test1").Index(1).Index(0).Object);
+			Assert.AreEqual(13, json1.S("test1").Index(1).Index(1).Object);
+
+			//~ if val := json1.S("test1").Index(2).Index(0).Data().(int); val != 14 {
+			//~ 	t.Errorf("create array: %v != %v", val, 14)
+			//~ }
+			//~ if val := json1.S("test1").Index(2).Index(1).Data().(int); val != 15 {
+			//~ 	t.Errorf("create array: %v != %v", val, 15)
+			//~ }
+			Assert.AreEqual(14, json1.S("test1").Index(2).Index(0).Object);
+			Assert.AreEqual(15, json1.S("test1").Index(2).Index(1).Object);
+
+			//~ if val := json1.S("test1").Index(3).Index(0).Data().(int); val != 16 {
+			//~ 	t.Errorf("create array: %v != %v", val, 16)
+			//~ }
+			//~ if val := json1.S("test1").Index(3).Index(1).Data().(int); val != 17 {
+			//~ 	t.Errorf("create array: %v != %v", val, 17)
+			//~ }
+			Assert.AreEqual(16, json1.S("test1").Index(3).Index(0).Object);
+			Assert.AreEqual(17, json1.S("test1").Index(3).Index(1).Object);
+		}
+
+		[TestMethod]
+		//~ func TestArraysThree(t *testing.T) {
+		public void TestArraysThree()
+		{
+			//~ json1 := New()
+			var json1 = Container.New();
+
+			//~ test, err := json1.ArrayOfSizeP(1, "test1.test2")
+			//~ if err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			var test = json1.ArrayOfSizeP(1, "test1.test2");
+
+			//~ test.SetIndex(10, 0)
+			//~ if val := json1.S("test1", "test2").Index(0).Data().(int); val != 10 {
+			//~ 	t.Error(err)
+			//~ }
+			test.SetIndex(10, 0);
+			Assert.AreEqual(10, json1.S("test1", "test2").Index(0).Object);
+		}
+
+		[TestMethod]
+		//~ func TestArraysRoot(t *testing.T) {
+		public void TestArraysRoot()
+		{
+			//~ sample := []byte(`["test1"]`)
+			var sample = @"[""test1""]".ToUtf8Bytes();
+
+			//~ val, err := ParseJSON(sample)
+			//~ if err != nil {
+			//~ 	t.Errorf("Failed to parse: %v", err)
+			//~ 	return
+			//~ }
+			var val = Container.ParseJSON(sample);
+
+			//~ val.ArrayAppend("test2")
+			//~ val.ArrayAppend("test3")
+			//~ if obj, err := val.ObjectI(2); err != nil {
+			//~ 	t.Error(err)
+			//~ } else {
+			//~ 	obj.Set("bar", "foo")
+			//~ }
+			val.ArrayAppend("test2");
+			val.ArrayAppend("test3");
+			var obj = val.ObjectI(2);
+			Assert.IsNotNull(obj);
+			obj.Set("bar", "foo");
+
+			//~ if expected, actual := `["test1","test2",{"foo":"bar"}]`, val.String(); expected != actual {
+			//~ 	t.Errorf("expected %v, received: %v", expected, actual)
+			//~ }
+			var expected = @"[""test1"",""test2"",{""foo"":""bar""}]";
+			var actual = val.ToString();
+			Assert.AreEqual(expected, actual);
+		}
+
+		[TestMethod]
+		//~ func TestLargeSample(t *testing.T) {
+		public void TestLargeSample()
+		{
+			//~ sample := []byte(`{
+			//~ 	"test":{
+			//~ 		"innerTest":{
+			//~ 			"value":10,
+			//~ 			"value2":22,
+			//~ 			"value3":{
+			//~ 				"moreValue":45
+			//~ 			}
+			//~ 		}
+			//~ 	},
+			//~ 	"test2":20
+			//~ }`)
+			var sample = @"{
+				""test"":{
+					""innerTest"":{
+						""value"":10,
+						""value2"":22,
+						""value3"":{
+							""moreValue"":45
+						}
+					}
+				},
+				""test2"":20
+			}".ToUtf8Bytes();
+
+			//~ val, err := ParseJSON(sample)
+			//~ if err != nil {
+			//~ 	t.Errorf("Failed to parse: %v", err)
+			//~ 	return
+			//~ }
+			var val = Container.ParseJSON(sample);
+
+			//~ if result, ok := val.Search("test", "innerTest", "value3", "moreValue").Data().(float64); ok {
+			//~ 	if result != 45 {
+			//~ 		t.Errorf("Wrong value of result: %v", result)
+			//~ 	}
+			//~ } else {
+			//~ 	t.Errorf("Didn't find value")
+			//~ }
+			var result = Convert.ToDouble(val.Search("test", "innerTest", "value3", "moreValue").Object);
+			Assert.IsNotNull(result);
+			Assert.AreEqual(45, result);
+		}
+
+		[TestMethod]
+		//~ func TestShorthand(t *testing.T) {
+		public void TestShorthand()
+		{
+			//~ json, _ := ParseJSON([]byte(`{
+			//~ 	"outter":{
+			//~ 		"inner":{
+			//~ 			"value":5,
+			//~ 			"value2":10,
+			//~ 			"value3":11
+			//~ 		},
+			//~ 		"inner2":{
+			//~ 		}
+			//~ 	},
+			//~ 	"outter2":{
+			//~ 		"inner":0
+			//~ 	}
+			//~ }`))
+			var json = Container.ParseJSON(@"{
+				""outter"":{
+					""inner"":{
+						""value"":5,
+						""value2"":10,
+						""value3"":11
+					},
+					""inner2"":{
+					}
+				},
+				""outter2"":{
+					""inner"":0
+				}
+			}".ToUtf8Bytes());
+
+			//~ missingValue:= json.S("outter").S("doesntexist").S("alsodoesntexist").S("inner").S("value").Data()
+			//~ if missingValue != nil {
+			//~ 	t.Errorf("missing value was actually found: %v\n", missingValue)
+			//~ }
+			var missingValue = json.S("outter").S("doesntexist").S("alsodoesntexist").S("inner").S("value").Object;
+			Assert.IsNull(missingValue);
+
+			//~ realValue := json.S("outter").S("inner").S("value2").Data().(float64)
+			//~ if realValue != 10 {
+			//~ 	t.Errorf("real value was incorrect: %v\n", realValue)
+			//~ }
+			var realValue = Convert.ToDouble(json.S("outter").S("inner").S("value2").Object);
+			Assert.AreEqual(10, realValue);
+
+			//~ _, err := json.S("outter2").Set(json.S("outter").S("inner").Data(), "inner")
+			//~ if err != nil {
+			//~ 	t.Errorf("error setting outter2: %v\n", err)
+			//~ }
+			json.S("outter2").Set(json.S("outter").S("inner").Object, "inner");
+
+			//~ compare := `{"outter":{"inner":{"value":5,"value2":10,"value3":11},"inner2":{}}` +
+			//~ 	`,"outter2":{"inner":{"value":5,"value2":10,"value3":11}}}`
+			//~ out := json.String()
+			//~ if out != compare {
+			//~ 	t.Errorf("wrong serialized structure: %v\n", out)
+			//~ }
+			var compare = @"{""outter"":{""inner"":{""value"":5,""value2"":10,""value3"":11},""inner2"":{}}"
+					+ @",""outter2"":{""inner"":{""value"":5,""value2"":10,""value3"":11}}}";
+
+			//~ compare2 := `{"outter":{"inner":{"value":6,"value2":10,"value3":11},"inner2":{}}` +
+			//~ 	`,"outter2":{"inner":{"value":6,"value2":10,"value3":11}}}`
+			var compare2 = @"{""outter"":{""inner"":{""value"":6,""value2"":10,""value3"":11},""inner2"":{}}"
+					+ @",""outter2"":{""inner"":{""value"":6,""value2"":10,""value3"":11}}}";
+
+			//~ json.S("outter").S("inner").Set(6, "value")
+			//~ out = json.String()
+			//~ if out != compare2 {
+			//~ 	t.Errorf("wrong serialized structure: %v\n", out)
+			//~ }
+			json.S("outter").S("inner").Set(6, "value");
+			var @out = json.ToString();
+			Assert.AreEqual(compare2, @out);
+		}
+
+		[TestMethod]
+		//~ func TestInvalid(t *testing.T) {
+		public void TestInvalid()
+		{
+			//~ invalidJSONSamples := []string{
+			//~ 	`{dfads"`,
+			//~ 	``,
+			//~ 	// `""`,
+			//~ 	// `"hello"`,
+			//~ 	"{}\n{}",
+			//~ }
+			var invalidJSONSamples = new string[]
+			{
+				"{dfads\"",
+				"",
+				// `""`,
+				// `"hello"`,
+				"{}\n{}",
+			};
+
+			//~ for _, sample := range invalidJSONSamples {
+			//~ 	if _, err := ParseJSON([]byte(sample)); err == nil {
+			//~ 		t.Errorf("parsing invalid JSON '%v' did not return error", sample)
+			//~ 	}
+			//~ }
+			foreach (var sample in invalidJSONSamples)
+			{
+				Assert.ThrowsException<Newtonsoft.Json.JsonReaderException>(() =>
+					  Container.ParseJSON(sample.ToUtf8Bytes()));
+			}
+
+			//~ if _, err := ParseJSON(nil); err == nil {
+			//~ 	t.Errorf("parsing nil did not return error")
+			//~ }
+			Assert.ThrowsException<ArgumentNullException>(() =>
+				Container.ParseJSON(null));
+
+			//~ validObj, err := ParseJSON([]byte(`{}`))
+			//~ if err != nil {
+			//~ 	t.Errorf("failed to parse '{}'")
+			//~ }
+			var validObj = Container.ParseJSON("{}".ToUtf8Bytes());
+
+			//~ invalidStr := validObj.S("Doesn't exist").String()
+			//~ if "{}" != invalidStr {
+			//~ 	t.Errorf("expected '{}', received: %v", invalidStr)
+			//~ }
+			var invalidStr = validObj.S("Doesn't exist").ToString();
+			Assert.AreEqual("{}", invalidStr);
+		}
+
+		[TestMethod]
+		//~ func TestCreation(t *testing.T) {
+		public void TestCreation()
+		{
+			//~ json, _ := ParseJSON([]byte(`{}`))
+			//~ inner, err := json.ObjectP("test.inner")
+			//~ if err != nil {
+			//~ 	t.Errorf("Error: %v", err)
+			//~ 	return
+			//~ }
+			var json = Container.ParseJSON("{}".ToUtf8Bytes());
+			var inner = json.ObjectP("test.inner");
+
+			inner.Set(10, "first");
+			inner.Set(20, "second");
+
+			inner.Array("array");
+			inner.ArrayAppend("first element of the array", "array");
+			inner.ArrayAppend(2, "array");
+			inner.ArrayAppend("three", "array");
+
+			//~ expected := `{"test":{"inner":{"array":["first element of the array",2,"three"],` +
+			//~ 	`"first":10,"second":20}}}`
+			var expected = @"{""test"":{""inner"":{""array"":[""first element of the array"",2,""three""],"
+					+ @"""first"":10,""second"":20}}}";
+			//~ actual := json.String()
+			//~ if actual != expected {
+			//~ 	t.Errorf("received incorrect output from json object: %v\n", actual)
+			//~ }
+			var actual = json.ToString();
+			Assert.AreEqual(expected, actual);
+		}
+
+		//~ type outterJSON struct {
+		//~ 	FirstInner  innerJSON
+		//~ 	SecondInner innerJSON
+		//~ 	ThirdInner  innerJSON
+		//~ }
+		public class OutterJSON
+		{
+			public InnerJSON FirstInner
+			{ get; set; }
+
+			public InnerJSON SecondInner
+			{ get; set; }
+
+			public InnerJSON ThirdInner
+			{ get; set; }
+		}
+
+		//~ type innerJSON struct {
+		//~ 	NumberType float64
+		//~ 	StringType string
+		//~ }
+		public class InnerJSON
+		{
+			public double NumberType
+			{ get; set; }
+
+			public string StringType
+			{ get; set; }
+		}
+
+		//~ type jsonStructure struct {
+		//~ 	FirstOutter  outterJSON
+		//~ 	SecondOutter outterJSON
+		//~ }
+		public class JsonStructure
+		{
+			public OutterJSON FirstOutter
+			{ get; set; }
+
+			public OutterJSON SecondOutter
+			{ get; set; }
+		}
+
+		//~ var jsonContent = []byte(`{
+		//~ 	"firstOutter":{
+		//~ 		"firstInner":{
+		//~ 			"numberType":11,
+		//~ 			"stringType":"hello world, first first"
+		//~ 		},
+		//~ 		"secondInner":{
+		//~ 			"numberType":12,
+		//~ 			"stringType":"hello world, first second"
+		//~ 		},
+		//~ 		"thirdInner":{
+		//~ 			"numberType":13,
+		//~ 			"stringType":"hello world, first third"
+		//~ 		}
+		//~ 	},
+		//~ 	"secondOutter":{
+		//~ 		"firstInner":{
+		//~ 			"numberType":21,
+		//~ 			"stringType":"hello world, second first"
+		//~ 		},
+		//~ 		"secondInner":{
+		//~ 			"numberType":22,
+		//~ 			"stringType":"hello world, second second"
+		//~ 		},
+		//~ 		"thirdInner":{
+		//~ 			"numberType":23,
+		//~ 			"stringType":"hello world, second third"
+		//~ 		}
+		//~ 	}
+		//~ }`)
+		byte[] JsonContent = @"{
+			""firstOutter"":{
+				""firstInner"":{
+					""numberType"":11,
+					""stringType"":""hello world, first first""
+				},
+				""secondInner"":{
+					""numberType"":12,
+					""stringType"":""hello world, first second""
+				},
+				""thirdInner"":{
+					""numberType"":13,
+					""stringType"":""hello world, first third""
+				}
+			},
+			""secondOutter"":{
+				""firstInner"":{
+					""numberType"":21,
+					""stringType"":""hello world, second first""
+				},
+				""secondInner"":{
+					""numberType"":22,
+					""stringType"":""hello world, second second""
+				},
+				""thirdInner"":{
+					""numberType"":23,
+					""stringType"":""hello world, second third""
+				}
+			}
+		}".ToUtf8Bytes();
+
+		/*
+		Simple use case, compares unmarshalling declared structs vs dynamically searching for
+		the equivalent hierarchy. Hopefully we won't see too great a performance drop from the
+		dynamic approach.
+		*/
+
+		[TestMethod]
+		// Poor approximation of:
+		//   https://golang.org/pkg/testing/#hdr-Benchmarks
+		[DataRow(10)]
+		[DataRow(1000)]
+		[DataRow(100000)]
+		//~ func BenchmarkStatic(b *testing.B) {
+		public void BenchmarkStatic(int b_N)
+		{
+			//~ for i := 0; i < b.N; i++ {
+			for (int i = 0; i < b_N; i++)
+			{
+				//~ var jsonObj jsonStructure
+				//~ json.Unmarshal(jsonContent, &jsonObj)
+				var jsonObj = JsonConvert.DeserializeObject<JsonStructure>(JsonContent.ToUtf8String());
+
+				//~ if val := jsonObj.FirstOutter.SecondInner.NumberType; val != 12 {
+				//~ 	b.Errorf("Wrong value of FirstOutter.SecondInner.NumberType: %v\n", val)
+				//~ }
+				Assert.AreEqual(12, jsonObj.FirstOutter.SecondInner.NumberType);
+				//~ expected := "hello world, first second"
+				//~ if val := jsonObj.FirstOutter.SecondInner.StringType; val != expected {
+				//~ 	b.Errorf("Wrong value of FirstOutter.SecondInner.StringType: %v\n", val)
+				//~ }
+				//~ if val := jsonObj.SecondOutter.ThirdInner.NumberType; val != 23 {
+				//~ 	b.Errorf("Wrong value of SecondOutter.ThirdInner.NumberType: %v\n", val)
+				//~ }
+				Assert.AreEqual("hello world, first second", jsonObj.FirstOutter.SecondInner.StringType);
+				//~ expected = "hello world, second second"
+				//~ if val := jsonObj.SecondOutter.SecondInner.StringType; val != expected {
+				//~ 	b.Errorf("Wrong value of SecondOutter.SecondInner.StringType: %v\n", val)
+				//~ }
+				Assert.AreEqual("hello world, second second", jsonObj.SecondOutter.SecondInner.StringType);
+			}
+		}
+
+		[TestMethod]
+		// Poor approximation of:
+		//   https://golang.org/pkg/testing/#hdr-Benchmarks
+		[DataRow(10)]
+		[DataRow(1000)]
+		[DataRow(100000)]
+		//~ func BenchmarkDynamic(b *testing.B) {
+		public void BenchmarkDynamic(int b_N)
+		{
+			//~ for i := 0; i < b.N; i++ {
+			for (int i = 0; i < b_N; i++)
+			{
+				//~ jsonObj, err := ParseJSON(jsonContent)
+				//~ if err != nil {
+				//~ 	b.Errorf("Error parsing json: %v\n", err)
+				//~ }
+				var jsonObj = Container.ParseJSON(JsonContent);
+
+				//~ FOSI := jsonObj.S("firstOutter", "secondInner")
+				//~ SOSI := jsonObj.S("secondOutter", "secondInner")
+				//~ SOTI := jsonObj.S("secondOutter", "thirdInner")
+				var FOSI = jsonObj.S("firstOutter", "secondInner");
+				var SOSI = jsonObj.S("secondOutter", "secondInner");
+				var SOTI = jsonObj.S("secondOutter", "thirdInner");
+
+				//~ if val := FOSI.S("numberType").Data().(float64); val != 12 {
+				//~ 	b.Errorf("Wrong value of FirstOutter.SecondInner.NumberType: %v\n", val)
+				//~ }
+				Assert.AreEqual(12, Convert.ToDouble(FOSI.S("numberType").Object));
+				//~ expected := "hello world, first second"
+				//~ if val := FOSI.S("stringType").Data().(string); val != expected {
+				//~ 	b.Errorf("Wrong value of FirstOutter.SecondInner.StringType: %v\n", val)
+				//~ }
+				Assert.AreEqual("hello world, first second", FOSI.S("stringType").Object);
+				//~ if val := SOTI.S("numberType").Data().(float64); val != 23 {
+				//~ 	b.Errorf("Wrong value of SecondOutter.ThirdInner.NumberType: %v\n", val)
+				//~ }
+				Assert.AreEqual(23, Convert.ToDouble(SOTI.S("numberType").Object));
+				//~ expected = "hello world, second second"
+				//~ if val := SOSI.S("stringType").Data().(string); val != expected {
+				//~ 	b.Errorf("Wrong value of SecondOutter.SecondInner.StringType: %v\n", val)
+				//~ }
+				Assert.AreEqual("hello world, second second", SOSI.S("stringType").Object);
+			}
+		}
+
+		[TestMethod]
+		//~ func TestNoTypeChildren(t *testing.T) {
+		public void TestNoTypeChildren()
+		{
+			//~ jsonObj, err := ParseJSON([]byte(`{"not_obj_or_array":1}`))
+			//~ if err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			var jsonObj = Container.ParseJSON(@"{""not_obj_or_array"":1}".ToUtf8Bytes());
+			//~ exp := ErrNotObjOrArray
+			//~ if _, act := jsonObj.S("not_obj_or_array").Children(); act != exp {
+			//~ 	t.Errorf("Unexpected value returned: %v != %v", exp, act)
+			//~ }
+			Assert.ThrowsException<Container.ErrNotObjOrArray>(() =>
+				jsonObj.S("not_obj_or_array").Children());
+			//~ exp = ErrNotObj
+			//~ if _, act := jsonObj.S("not_obj_or_array").ChildrenMap(); act != exp {
+			//~ 	t.Errorf("Unexpected value returned: %v != %v", exp, act)
+			//~ }
+			Assert.ThrowsException<Container.ErrNotObj>(() =>
+				jsonObj.S("not_obj_or_array").ChildrenMap());
+		}
+
+		[TestMethod]
+		//~ func TestBadIndexes(t *testing.T) {
+		public void TestBadIndexes()
+		{
+			//~ jsonObj, err := ParseJSON([]byte(`{"array":[1,2,3]}`))
+			//~ if err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			var jsonObj = Container.ParseJSON(@"{""array"":[1,2,3]}".ToUtf8Bytes());
+			//~ if act := jsonObj.Index(0).Data(); nil != act {
+			//~ 	t.Errorf("Unexpected value returned: %v != %v", nil, act)
+			//~ }
+			Assert.IsNull(jsonObj.Index(0).Object);
+			//~ if act := jsonObj.S("array").Index(4).Data(); nil != act {
+			//~ 	t.Errorf("Unexpected value returned: %v != %v", nil, act)
+			//~ }
+			Assert.IsNull(jsonObj.S("array").Index(4).Object);
+		}
+
+		[TestMethod]
+		//~ func TestNilSet(t *testing.T) {
+		public void TestNilSet()
+		{
+			//~ obj := Container{nil}
+			//~ if _, err := obj.Set("bar", "foo"); err != nil {
+			//~ 	t.Error(err)
+			//~ }
+			var obj = new Container(null);
+			//~ if _, err := obj.Set("new", "foo", "bar"); err != ErrPathCollision {
+			//~ 	t.Errorf("Expected ErrPathCollision: %v, %s", err, obj.Data())
+			//~ }
+			Assert.ThrowsException<Container.ErrPathCollision>(() =>
+				obj.Search("new", "foo", "bar"));
+			//~ if _, err := obj.SetIndex("new", 0); err != ErrNotArray {
+			//~ 	t.Errorf("Expected ErrNotArray: %v, %s", err, obj.Data())
+			//~ }
+			Assert.ThrowsException<Container.ErrNotArray>(() =>
+				obj.SetIndex("new", 0));
 		}
 	}
 }
