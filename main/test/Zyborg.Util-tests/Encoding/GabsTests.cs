@@ -1681,11 +1681,12 @@ namespace Zyborg.Util.Encoding
 			//~ 	t.Error(err)
 			//~ }
 			var obj = new Container(null);
+			obj.Set("bar", "foo");
 			//~ if _, err := obj.Set("new", "foo", "bar"); err != ErrPathCollision {
 			//~ 	t.Errorf("Expected ErrPathCollision: %v, %s", err, obj.Data())
 			//~ }
 			Assert.ThrowsException<Container.ErrPathCollision>(() =>
-				obj.Search("new", "foo", "bar"));
+				obj.Set("new", "foo", "bar"));
 			//~ if _, err := obj.SetIndex("new", 0); err != ErrNotArray {
 			//~ 	t.Errorf("Expected ErrNotArray: %v, %s", err, obj.Data())
 			//~ }
