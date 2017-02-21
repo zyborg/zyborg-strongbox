@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
+using Zyborg.Util;
 using Zyborg.Vault.Helper.Salt;
+using static Zyborg.Util.ReflectWalk;
 
 namespace Zyborg.Vault.Audit
 {
@@ -86,7 +89,7 @@ namespace Zyborg.Vault.Audit
 					//~ }
 					//~
 					//~ s.Data = data.(map[string]interface{})
-					s.Data = HashStructure(s.Data, fn);
+					s.Data = Hash(s.Data, fn);
 					break;
 
 				//~ case *logical.Response:
@@ -119,7 +122,7 @@ namespace Zyborg.Vault.Audit
 					//~ }
 					//~
 					//~ s.Data = data.(map[string]interface{})
-					s.Data = HashStructure(s.Data, fn);
+					s.Data = Hash(s.Data, fn);
 					break;
 
 				//~ case *logical.ResponseWrapInfo:
@@ -159,7 +162,7 @@ namespace Zyborg.Vault.Audit
 			switch (s)
 			{
 				case IDictionary<string, object> d:
-					s = (T)Activator.CreateInstance(typeof(T), d);
+					s = (T)Activator.CreateInstance(typeof(Dictionary<string, object>), d);
 					break;
 
 				default:
@@ -181,7 +184,11 @@ namespace Zyborg.Vault.Audit
 	// (github.com/mitchellh/reflectwalk) that can be used to automatically
 	// replace primitives with a hashed value.
 	//type hashWalker struct {
-	public class HashWalker
+	public class HashWalker : ReflectWalk.IWalker
+			, ReflectWalk.IEnterExitWalker
+			, ReflectWalk.IMapWalker
+			, ReflectWalk.ISliceWalker
+			, ReflectWalk.IPrimitiveWalker
 	{
 		// Callback is the function to call with the primitive that is
 		// to be hashed. If there is an error, walking will be halted
@@ -198,134 +205,239 @@ namespace Zyborg.Vault.Audit
 		//~ csData      interface{}
 		//~ sliceIndex  int
 		//~ unknownKeys []string
+		private List<string> key = new List<string>();
+		private object lastValue;
+		private ReflectWalk.Location loc;
+		private List<object> cs = new List<object>();
+		private List<object> csKey = new List<object>();
+		private object csData;
+		private int sliceIndex;
+		private List<string> unknownKeys = new List<string>();
+
 
 		//~ func (w *hashWalker) Enter(loc reflectwalk.Location) error {
 		//~ 	w.loc = loc
 		//~ 	return nil
 		//~ }
+		public void Enter(Location loc)
+		{
+			this.loc = loc;
+		}
 
-		//func (w *hashWalker) Exit(loc reflectwalk.Location) error {
-		//	w.loc = reflectwalk.None
+		//~ func (w *hashWalker) Exit(loc reflectwalk.Location) error {
+		//~ 	w.loc = reflectwalk.None
+		//~
+		//~ 	switch loc {
+		//~ 	case reflectwalk.Map:
+		//~ 		w.cs = w.cs[:len(w.cs)-1]
+		//~ 	case reflectwalk.MapValue:
+		//~ 		w.key = w.key[:len(w.key)-1]
+		//~ 		w.csKey = w.csKey[:len(w.csKey)-1]
+		//~ 	case reflectwalk.Slice:
+		//~ 		w.cs = w.cs[:len(w.cs)-1]
+		//~ 	case reflectwalk.SliceElem:
+		//~ 		w.csKey = w.csKey[:len(w.csKey)-1]
+		//~ 	}
+		//~
+		//~ 	return nil
+		//~ }
+		public void Exit(Location loc)
+		{
+			this.loc = Location.None;
+			switch (loc)
+			{
+				case Location.Map:
+					cs.RemoveAt(cs.Count - 1);
+					break;
+				case Location.MapValue:
+					key.RemoveAt(key.Count - 1);
+					break;
+				case Location.Slice:
+					cs.RemoveAt(cs.Count - 1);
+					break;
+				case Location.SliceElem:
+					csKey.RemoveAt(csKey.Count - 1);
+					break;
+			}
+		}
 
-		//	switch loc {
-		//	case reflectwalk.Map:
-		//		w.cs = w.cs[:len(w.cs)-1]
-		//	case reflectwalk.MapValue:
-		//		w.key = w.key[:len(w.key)-1]
-		//		w.csKey = w.csKey[:len(w.csKey)-1]
-		//	case reflectwalk.Slice:
-		//		w.cs = w.cs[:len(w.cs)-1]
-		//	case reflectwalk.SliceElem:
-		//		w.csKey = w.csKey[:len(w.csKey)-1]
-		//	}
+		//~ func (w *hashWalker) Map(m reflect.Value) error {
+		//~ 	w.cs = append(w.cs, m)
+		//~ 	return nil
+		//~ }
+		public void Map(object m)
+		{
+			cs.Add(m);
+		}
 
-		//	return nil
-		//}
+		//~ func (w *hashWalker) MapElem(m, k, v reflect.Value) error {
+		//~ 	w.csData = k
+		//~ 	w.csKey = append(w.csKey, k)
+		//~ 	w.key = append(w.key, k.String())
+		//~ 	w.lastValue = v
+		//~ 	return nil
+		//~ }
+		public void MapElem(object m, object k, object v)
+		{
+			csData = k;
+			csKey.Add(k);
+			key.Add(k.ToString());
+			lastValue = v;
+		}
 
-		//func (w *hashWalker) Map(m reflect.Value) error {
-		//	w.cs = append(w.cs, m)
-		//	return nil
-		//}
+		//~ func (w *hashWalker) Slice(s reflect.Value) error {
+		//~ 	w.cs = append(w.cs, s)
+		//~ 	return nil
+		//~ }
+		public void Slice(object s)
+		{
+			cs.Add(s);
+		}
 
-		//func (w *hashWalker) MapElem(m, k, v reflect.Value) error {
-		//	w.csData = k
-		//	w.csKey = append(w.csKey, k)
-		//	w.key = append(w.key, k.String())
-		//	w.lastValue = v
-		//	return nil
-		//}
+		//~ func (w *hashWalker) SliceElem(i int, elem reflect.Value) error {
+		//~ 	w.csKey = append(w.csKey, reflect.ValueOf(i))
+		//~ 	w.sliceIndex = i
+		//~ 	return nil
+		//~ }
+		public void SliceElem(int index, object value)
+		{
+			csKey.Add(index);
+			sliceIndex = index;
+		}
 
-		//func (w *hashWalker) Slice(s reflect.Value) error {
-		//	w.cs = append(w.cs, s)
-		//	return nil
-		//}
+		//~ func (w *hashWalker) Primitive(v reflect.Value) error {
+		public void Primitive(ref object v)
+		{
+			//~ if w.Callback == nil {
+			//~ 	return nil
+			//~ }
+			if (Callback == null)
+				return;
 
-		//func (w *hashWalker) SliceElem(i int, elem reflect.Value) error {
-		//	w.csKey = append(w.csKey, reflect.ValueOf(i))
-		//	w.sliceIndex = i
-		//	return nil
-		//}
+			// We don't touch map keys
+			//~ if w.loc == reflectwalk.MapKey {
+			//~ 	return nil
+			//~ }
+			if (loc == Location.MapKey)
+				return;
 
-		//func (w *hashWalker) Primitive(v reflect.Value) error {
-		//	if w.Callback == nil {
-		//		return nil
-		//	}
+			//~ setV := v
 
-		//	// We don't touch map keys
-		//	if w.loc == reflectwalk.MapKey {
-		//		return nil
-		//	}
+			// We only care about strings
+			//~ if v.Kind() == reflect.Interface {
+			//~ 	setV = v
+			//~ 	v = v.Elem()
+			//~ }
+			//~ if v.Kind() != reflect.String {
+			//~ 	return nil
+			//~ }
+			if (v.GetType().GetTypeInfo().IsInterface)
+				throw new NotSupportedException("we should never see an interface");
+			if (!(v is string))
+				return;
 
-		//	setV := v
+			//~ replaceVal := w.Callback(v.String())
+			var replaceVal = Callback((string)v);
 
-		//	// We only care about strings
-		//	if v.Kind() == reflect.Interface {
-		//		setV = v
-		//		v = v.Elem()
-		//	}
-		//	if v.Kind() != reflect.String {
-		//		return nil
-		//	}
+			//~ resultVal := reflect.ValueOf(replaceVal)
+			var resultVal = replaceVal;
 
-		//	replaceVal := w.Callback(v.String())
+			//~ switch w.loc {
+			switch (loc)
+			{
+				//~ case reflectwalk.MapKey:
+				//~ 	m := w.cs[len(w.cs)-1]
+				case Location.MapKey:
+					var m = cs[cs.Count - 1] as IDictionary<string, object>;
+					
+					// Delete the old value
+					//~ var zero reflect.Value
+					//~ m.SetMapIndex(w.csData.(reflect.Value), zero)
+					m.Remove(csData as string);
 
-		//	resultVal := reflect.ValueOf(replaceVal)
-		//	switch w.loc {
-		//	case reflectwalk.MapKey:
-		//		m := w.cs[len(w.cs)-1]
+					// Set the new key with the existing value
+					//~ m.SetMapIndex(resultVal, w.lastValue)
+					m[resultVal] = lastValue;
 
-		//		// Delete the old value
-		//		var zero reflect.Value
-		//		m.SetMapIndex(w.csData.(reflect.Value), zero)
+					// Set the key to be the new key
+					//~ w.csData = resultVal
+					csData = resultVal;
+					break;
+				//~ case reflectwalk.MapValue:
+				case Location.MapValue:
+					// If we're in a map, then the only way to set a map value is
+					// to set it directly.
+					//~ m := w.cs[len(w.cs)-1]
+					//~ mk := w.csData.(reflect.Value)
+					//~ m.SetMapIndex(mk, resultVal)
+					m = cs[cs.Count - 1] as IDictionary<string, object>;
+					var mk = csData as string;
+					m[mk] = resultVal;
+					break;
+				//~ default:
+				default:
+					// Otherwise, we should be addressable
+					//~ setV.Set(resultVal)
+					v = resultVal;
+					break;
+			}
 
-		//		// Set the new key with the existing value
-		//		m.SetMapIndex(resultVal, w.lastValue)
+			//~ return nil
+		}
 
-		//		// Set the key to be the new key
-		//		w.csData = resultVal
-		//	case reflectwalk.MapValue:
-		//		// If we're in a map, then the only way to set a map value is
-		//		// to set it directly.
-		//		m := w.cs[len(w.cs)-1]
-		//		mk := w.csData.(reflect.Value)
-		//		m.SetMapIndex(mk, resultVal)
-		//	default:
-		//		// Otherwise, we should be addressable
-		//		setV.Set(resultVal)
-		//	}
+		//~ func (w *hashWalker) removeCurrent() {
+		private void removeCurrent()
+		{
+			// Append the key to the unknown keys
+			//~ w.unknownKeys = append(w.unknownKeys, strings.Join(w.key, "."))
+			unknownKeys.Add(string.Join(".", key));
 
-		//	return nil
-		//}
+			//~ for i := 1; i <= len(w.cs); i++ {
+			for (var i = 1; i < cs.Count; i++)
+			{
+				//~ c := w.cs[len(w.cs)-i]
+				var c = cs[cs.Count - 1];
 
-		//func (w *hashWalker) removeCurrent() {
-		//	// Append the key to the unknown keys
-		//	w.unknownKeys = append(w.unknownKeys, strings.Join(w.key, "."))
+				//~ switch c.Kind() {
+				switch (c)
+				{
+					//~ case reflect.Map:
+					case IDictionary<string, object> d:
+						// Zero value so that we delete the map key
+						//~ var val reflect.Value
 
-		//	for i := 1; i <= len(w.cs); i++ {
-		//		c := w.cs[len(w.cs)-i]
-		//		switch c.Kind() {
-		//		case reflect.Map:
-		//			// Zero value so that we delete the map key
-		//			var val reflect.Value
+						// Get the key and delete it
+						//~ k := w.csData.(reflect.Value)
+						//~ c.SetMapIndex(k, val)
+						//~ return
+						var k = csData as string;
+						d.Remove(k);
+						return;
+				}
+			}
 
-		//			// Get the key and delete it
-		//			k := w.csData.(reflect.Value)
-		//			c.SetMapIndex(k, val)
-		//			return
-		//		}
-		//	}
+			//~ panic("No container found for removeCurrent")
+			throw new Exception("No container found for removeCurrent");
+		}
 
-		//	panic("No container found for removeCurrent")
-		//}
-
-		//func (w *hashWalker) replaceCurrent(v reflect.Value) {
-		//	c := w.cs[len(w.cs)-2]
-		//	switch c.Kind() {
-		//	case reflect.Map:
-		//		// Get the key and delete it
-		//		k := w.csKey[len(w.csKey)-1]
-		//		c.SetMapIndex(k, v)
-		//	}
-		//}
+		//~ func (w *hashWalker) replaceCurrent(v reflect.Value) {
+		public void replaceCurrent(object v)
+		{
+			//~ c := w.cs[len(w.cs)-2]
+			//~ switch c.Kind() {
+			//~ case reflect.Map:
+			//~ 	// Get the key and delete it
+			//~ 	k := w.csKey[len(w.csKey)-1]
+			//~ 	c.SetMapIndex(k, v)
+			//~ }
+			var c = cs[cs.Count - 2];
+			switch (c)
+			{
+				case IDictionary<string, object> d:
+					var k = csKey[csKey.Count - 1] as string;
+					d[k] = v;
+					break;
+			}
+		}
 	}
 }
