@@ -47,6 +47,13 @@ namespace Zyborg.Vault.Logical
 		public string ID
 		{ get; set; }
 
+		// If set, the name given to the replication secondary where this request
+		// originated
+		//~ ReplicationCluster string `json:"replication_cluster" structs:"replication_cluster", mapstructure:"replication_cluster"`
+		[JsonProperty("replication_cluster")]
+		public string ReplicationCluster
+		{ get; set; }
+
 		// Operation is the requested operation type
 		//~ Operation Operation `json:"operation" structs:"operation" mapstructure:"operation"`
 		[JsonProperty("Operation")]
