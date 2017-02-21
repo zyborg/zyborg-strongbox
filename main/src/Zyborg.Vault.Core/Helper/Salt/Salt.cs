@@ -191,7 +191,7 @@ namespace Zyborg.Vault.Helper.Salt
 			{
 				hm.Key = SaltValue.ToUtf8Bytes();
 				var hash = hm.ComputeHash(data.ToUtf8Bytes());
-				return BitConverter.ToString(hash).Replace("-", "");
+				return BitConverter.ToString(hash).Replace("-", "").ToLower();
 			}
 		}
 
