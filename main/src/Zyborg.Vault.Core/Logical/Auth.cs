@@ -13,6 +13,16 @@ namespace Zyborg.Vault.Logical
 	{
 		//~ LeaseOptions
 		// Base Class
+		public Auth()
+		{ }
+
+		public Auth(LeaseOptions lo)
+		{
+			this.Increment = lo.Increment;
+			this.IssueTime = lo.IssueTime;
+			this.Renewable = lo.Renewable;
+			this.TTL = lo.TTL;
+		}
 
 		// InternalData is JSON-encodable data that is stored with the auth struct.
 		// This will be sent back during a Renew/Revoke for storing internal data
@@ -94,6 +104,11 @@ namespace Zyborg.Vault.Logical
 				ClientToken = this.ClientToken,
 				Accessor = this.Accessor,
 				Period = this.Period,
+				// LeaseOptions
+				Increment = this.Increment,
+				IssueTime = this.IssueTime,
+				Renewable = this.Renewable,
+				TTL = this.TTL,
 			};
 
 			return copy;
