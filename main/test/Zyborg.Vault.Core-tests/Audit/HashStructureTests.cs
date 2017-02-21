@@ -361,5 +361,69 @@ namespace Zyborg.Vault.Audit
 				Assert.IsTrue(compare.Compare(tc.input, tc.output).AreEqual);
 			}
 		}
+
+		[TestMethod]
+		//~ func TestHashWalker(t *testing.T) {
+		public void TestHashWalker()
+		{
+			//~ replaceText := "foo"
+			var replaceText = "foo";
+
+			//~ cases := []struct {
+			//~ 	Input  interface{}
+			//~ 	Output interface{}
+			//~ }{
+			var cases = new(object input, object output)[]
+			{
+				(
+				//	//~ map[string]interface{}{
+				//	//~ 	"hello": "foo",
+				//	//~ },
+				//	//~ map[string]interface{}{
+				//	//~ 	"hello": replaceText,
+				//	//~ },
+				//	new Dictionary<string, object>
+				//	{
+				//		["hello"] = "foo",
+				//	},
+				//	new Dictionary<string, object>
+				//	{
+				//		["hello"] = replaceText,
+				//	}
+				//),(
+					//~ map[string]interface{}{
+					//~ 	"hello": []interface{}{"world"},
+					//~ },
+					//~ map[string]interface{}{
+					//~ 	"hello": []interface{}{replaceText},
+					//~ },
+					new Dictionary<string, object>
+					{
+						["hello"] = new object[] { "world" },
+					},
+					new Dictionary<string, object>
+					{
+						["hello"] = new object[] { replaceText },
+					}
+				),
+			};
+
+			//~ for _, tc := range cases {
+			foreach (var tc in cases)
+			{
+				//~ output, err := HashStructure(tc.Input, func(string) string {
+				//~ 	return replaceText
+				//~ })
+				//~ if err != nil {
+				//~ 	t.Fatalf("err: %s\n\n%#v", err, tc.Input)
+				//~ }
+				//~ if !reflect.DeepEqual(output, tc.Output) {
+				//~ 	t.Fatalf("bad:\n\n%#v\n\n%#v", tc.Input, output)
+				//~ }
+				var output = HashStructure.Hash(tc.input, x => replaceText);
+				var compare = new KellermanSoftware.CompareNetObjects.CompareLogic();
+				Assert.IsTrue(compare.Compare(tc.output, output).AreEqual);
+			}
+		}
 	}
 }

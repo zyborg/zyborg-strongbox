@@ -269,7 +269,6 @@ namespace Zyborg.Util
 			//~ if v.Kind() == reflect.Interface {
 			//~ 	v = v.Elem()
 			//~ }
-			var originalV = v;
 			if (v.GetType().GetTypeInfo().IsInterface)
 				throw new NotSupportedException("did not expect an interface");
 
@@ -301,7 +300,7 @@ namespace Zyborg.Util
 			switch (v)
 			{
 				case object x when x == null || x is bool || x is Delegate || x.GetType().IsNumber() || x is string:
-					WalkPrimitive(ref originalV, w);
+					WalkPrimitive(ref v, w);
 					break;
 				case IDictionary<string, object> x:
 					WalkMap(v, w);
@@ -526,7 +525,10 @@ namespace Zyborg.Util
 				//~ if err := walk(elem, w); err != nil {
 				//~ 	return err
 				//~ }
+				var origElem = elem;
 				WalkInternal(ref elem, w);
+				if (origElem != elem)
+					((Array)v).SetValue(elem, i);
 
 				//~ if ok {
 				//~ 	ew.Exit(ArrayElem)
