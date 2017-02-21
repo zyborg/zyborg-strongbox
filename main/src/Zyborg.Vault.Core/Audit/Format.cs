@@ -19,9 +19,11 @@ namespace Zyborg.Vault.Audit
 	// AuditFormatter implements the Formatter interface, and allows the underlying
 	// marshaller to be swapped out
 	//~ type AuditFormatter struct {
-	public class AuditFormatter : IAuditFormatWriter
+	public abstract class AuditFormatter : IAuditFormatWriter
 	{
 		//~ AuditFormatWriter
+		public abstract void WriteRequest(Stream s, AuditRequestEntry entry);
+		public abstract void WriteResponse(Stream s, AuditResponseEntry entry);
 
 
 		//~ func (f *AuditFormatter) FormatRequest(
@@ -100,7 +102,7 @@ namespace Zyborg.Vault.Audit
 					//~ }
 					if (auth != null)
 					{
-						Hash(config.Salt, auth);
+						HashStructure.Hash(config.Salt, auth);
 					}
 
 					// Cache and restore accessor in the request
@@ -117,7 +119,7 @@ namespace Zyborg.Vault.Audit
 					var clientTokenAccessor = config.HMACAccessor
 						? null
 						: req?.ClientTokenAccessor;
-					Hash(config.Salt, req);
+					HashStructure.Hash(config.Salt, req);
 					if (!string.IsNullOrEmpty(clientTokenAccessor))
 						req.ClientTokenAccessor = clientTokenAccessor;
 				}
@@ -195,7 +197,7 @@ namespace Zyborg.Vault.Audit
 					reqEntry.Time = DateTime.UtcNow.FormatUtcAsRFC3339();
 
 				//~ return f.AuditFormatWriter.WriteRequest(w, reqEntry)
-				return this.WriteRequest(w, reqEntry);
+				this.WriteRequest(w, reqEntry);
 			}
 		}
 
@@ -298,7 +300,7 @@ namespace Zyborg.Vault.Audit
 						var accessor = config.HMACAccessor
 							? null
 							: auth.Accessor;
-						Hash(config.Salt, auth);
+						HashStructure.Hash(config.Salt, auth);
 						if (!string.IsNullOrEmpty(accessor))
 							auth.Accessor = accessor;
 					}
@@ -317,7 +319,7 @@ namespace Zyborg.Vault.Audit
 					var clientTokenAccessor = config.HMACAccessor
 						? null
 						: req?.ClientTokenAccessor;
-					Hash(config.Salt, req);
+					HashStructure.Hash(config.Salt, req);
 					if (!string.IsNullOrEmpty(clientTokenAccessor))
 						req.ClientTokenAccessor = clientTokenAccessor;
 
@@ -348,7 +350,7 @@ namespace Zyborg.Vault.Audit
 						var wrappedAccessor = config.HMACAccessor
 							? null
 							: resp?.WrapInfo?.WrappedAccessor;
-						Hash(config.Salt, resp);
+						HashStructure.Hash(config.Salt, resp);
 						if (!string.IsNullOrEmpty(accessor))
 							resp.Auth.Accessor = accessor;
 						if (!string.IsNullOrEmpty(wrappedAccessor))
@@ -514,7 +516,7 @@ namespace Zyborg.Vault.Audit
 					respEntry.Time = DateTime.UtcNow.FormatUtcAsRFC3339();
 
 				//~ return f.AuditFormatWriter.WriteResponse(w, respEntry)
-				return WriteResponse(w, respEntry);
+				WriteResponse(w, respEntry);
 			}
 		}
 
