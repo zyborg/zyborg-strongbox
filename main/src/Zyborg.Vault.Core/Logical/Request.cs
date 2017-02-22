@@ -296,23 +296,19 @@ namespace Zyborg.Vault.Logical
 	//~ 	RenewOperation              = "renew"
 	//~ 	RollbackOperation           = "rollback"
 	//~ )
-	public sealed class Operation
+
+	public sealed class Operation : LabeledEnum<Operation, string>
 	{
-		public static readonly Operation CreateOperation = new Operation("create");
-		public static readonly Operation ReadOperation = new Operation("read");
-		public static readonly Operation DeleteOperation = new Operation("delete");
-		public static readonly Operation UpdateOperation = new Operation("update");
-		public static readonly Operation ListOperation = new Operation("list");
-		public static readonly Operation HelpOperation = new Operation("help");
+		public static readonly Operation CreateOperation = From("create");
+		public static readonly Operation ReadOperation = From("read");
+		public static readonly Operation DeleteOperation = From("delete");
+		public static readonly Operation UpdateOperation = From("update");
+		public static readonly Operation ListOperation = From("list");
+		public static readonly Operation HelpOperation = From("help");
 
-		public static readonly Operation RevokeOperation = new Operation("revoke");
-		public static readonly Operation RenewOperation = new Operation("renew");
-		public static readonly Operation RollbackOperation = new Operation("rollback");
-
-		private Operation(string name) => Name = name;
-
-		public string Name
-		{ get; }
+		public static readonly Operation RevokeOperation = From("revoke");
+		public static readonly Operation RenewOperation = From("renew");
+		public static readonly Operation RollbackOperation = From("rollback");
 	}
 
 	//~ var (
