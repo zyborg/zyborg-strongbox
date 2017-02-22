@@ -19,12 +19,27 @@ namespace Zyborg.Vault.Audit
 	// AuditFormatter implements the Formatter interface, and allows the underlying
 	// marshaller to be swapped out
 	//~ type AuditFormatter struct {
-	public abstract class AuditFormatter : IAuditFormatWriter
+	public class AuditFormatter : IAuditFormatWriter
 	{
-		//~ AuditFormatWriter
-		public abstract void WriteRequest(Stream s, AuditRequestEntry entry);
-		public abstract void WriteResponse(Stream s, AuditResponseEntry entry);
+		private IAuditFormatWriter _writer;
 
+		public AuditFormatter(IAuditFormatWriter writer)
+		{
+			if (writer == null)
+				throw new ArgumentNullException(nameof(writer));
+			_writer = writer;
+		}
+
+		//~ AuditFormatWriter
+		public void WriteRequest(Stream s, AuditRequestEntry entry)
+		{
+			_writer.WriteRequest(s, entry);
+		}
+
+		public void WriteResponse(Stream s, AuditResponseEntry entry)
+		{
+			_writer.WriteResponse(s, entry);
+		}
 
 		//~ func (f *AuditFormatter) FormatRequest(
 		//~ 	w io.Writer,
