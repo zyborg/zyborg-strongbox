@@ -41,7 +41,7 @@ namespace Zyborg.Vault.Logical
 		//~ DisplayName string `json:"display_name" mapstructure:"display_name" structs:"display_name"`
 		[JsonProperty("display_name")]
 		public string DisplayName
-		{ get; set; }
+		{ get; set; } = string.Empty;
 
 		// Policies is the list of policies that the authenticated user
 		// is associated with.
