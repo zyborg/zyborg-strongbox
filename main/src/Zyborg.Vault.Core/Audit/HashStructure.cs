@@ -159,6 +159,10 @@ namespace Zyborg.Vault.Audit
 			//~ 	return nil, err
 			//~ }
 
+			object obj = s;
+			if (obj == null)
+				return s;
+
 			switch (s)
 			{
 				case IDictionary<string, object> d:
