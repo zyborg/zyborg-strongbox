@@ -10,6 +10,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Grpc" Version="1.1.0" />
+    <PackageReference Include="Grpc.Core" Version="1.1.0" />
     <PackageReference Include="jose-jwt" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.0" />

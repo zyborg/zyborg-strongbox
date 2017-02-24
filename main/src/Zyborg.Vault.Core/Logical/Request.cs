@@ -311,43 +311,38 @@ namespace Zyborg.Vault.Logical
 		public static readonly Operation RollbackOperation = From("rollback");
 	}
 
-	//~ var (
-	//~ 	// ErrUnsupportedOperation is returned if the operation is not supported
-	//~ 	// by the logical backend.
-	//~ 	ErrUnsupportedOperation = errors.New("unsupported operation")
-	//~ 
-	//~ 	// ErrUnsupportedPath is returned if the path is not supported
-	//~ 	// by the logical backend.
-	//~ 	ErrUnsupportedPath = errors.New("unsupported path")
-	//~ 
-	//~ 	// ErrInvalidRequest is returned if the request is invalid
-	//~ 	ErrInvalidRequest = errors.New("invalid request")
-	//~ 
-	//~ 	// ErrPermissionDenied is returned if the client is not authorized
-	//~ 	ErrPermissionDenied = errors.New("permission denied")
-	//~ )
-	public class ErrUnsupportedOperation : Exception
+	public static partial class Globals
 	{
-		public ErrUnsupportedOperation()
-			: base("unsupported operation")
-		{ }
-	}
-	public class ErrUnsupportedPath : Exception
-	{
-		public ErrUnsupportedPath()
-			: base("unsupported path")
-		{ }
-	}
-	public class ErrInvalidRequest : Exception
-	{
-		public ErrInvalidRequest()
-			: base("invalid request")
-		{ }
-	}
-	public class ErrPermissionDenied : Exception
-	{
-		public ErrPermissionDenied()
-			: base("permission denied")
-		{ }
+		//~ var (
+		//~ 	// ErrUnsupportedOperation is returned if the operation is not supported
+		//~ 	// by the logical backend.
+		//~ 	ErrUnsupportedOperation = errors.New("unsupported operation")
+		//~ 
+		//~ 	// ErrUnsupportedPath is returned if the path is not supported
+		//~ 	// by the logical backend.
+		//~ 	ErrUnsupportedPath = errors.New("unsupported path")
+		//~ 
+		//~ 	// ErrInvalidRequest is returned if the request is invalid
+		//~ 	ErrInvalidRequest = errors.New("invalid request")
+		//~ 
+		//~ 	// ErrPermissionDenied is returned if the client is not authorized
+		//~ 	ErrPermissionDenied = errors.New("permission denied")
+		//~ )
+		public class ErrUnsupportedOperation : Exception
+		{
+			public ErrUnsupportedOperation() : base("unsupported operation") { }
+		}
+		public class ErrUnsupportedPath : Exception
+		{
+			public ErrUnsupportedPath() : base("unsupported path") { }
+		}
+		public class ErrInvalidRequest : Exception
+		{
+			public ErrInvalidRequest() : base("invalid request") { }
+		}
+		public class ErrPermissionDenied : Exception
+		{
+			public ErrPermissionDenied() : base("permission denied") { }
+		}
 	}
 }

@@ -19,13 +19,13 @@ namespace Zyborg.Vault.Logical
 	//~ 	s    string
 	//~ 	code int
 	//~ }
-	public class CodedError : IHttpCodedError
+	public class CodedError : Exception, IHttpCodedError
 	{
 		public string Error
-		{ get; set; }
+		{ get; private set; }
 
 		public int Code
-		{ get; set; }
+		{ get; private set; }
 
 		//~ func (e *codedError) Error() string {
 		//~ 	return e.s
@@ -39,7 +39,7 @@ namespace Zyborg.Vault.Logical
 		//~ 	return &codedError{s, c}
 		//~ }
 
-		public CodedError(int c, string s)
+		public CodedError(int c, string s) : base(s)
 		{
 			Code = c;
 			Error = s;

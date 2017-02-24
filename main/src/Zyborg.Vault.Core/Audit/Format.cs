@@ -634,7 +634,7 @@ namespace Zyborg.Vault.Audit
 		[JsonProperty("remote_address")] 				public string                 RemoteAddr          { get; set; } 
 		[JsonProperty("wrap_ttl")] 						public int                    WrapTTL             { get; set; } 
 		[JsonProperty("headers")] 						public IDictionary<string, string[]>     Headers             { get; set; } 
-		}
+	}
 
 	//~ type AuditResponse struct {
 	public class AuditResponse

@@ -7,13 +7,16 @@ using Zyborg.Util;
 
 namespace Zyborg.Vault.Logical
 {
-	public static class Constants
+	public static partial class Globals
 	{
 		// ErrReadOnly is returned when a backend does not support
 		// writing. This can be caused by a read-only replica or secondary
 		// cluster operation.
 		//~ var ErrReadOnly = errors.New("Cannot write to readonly storage")
-		public static readonly Exception ErrReadOnly = new Exception("Cannot write to readonly storage");
+		public class ErrReadOnly : Exception
+		{
+			public ErrReadOnly() : base("Cannot write to readonly storage") { }
+		}
 	}
 
 	// Storage is the way that logical backends are able read/write data.
